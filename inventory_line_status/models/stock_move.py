@@ -3,12 +3,22 @@ from odoo import models, fields, api
 class StockMove(models.Model):
     _inherit = 'stock.move'
 
+    # Add prefetch hints
+    _prefetch_fields = ['move_line_ids', 'check_status']
+
     check_status = fields.Selection([
         ('checked', '✓'),
         ('unchecked', '⚠')
-    ], string='Status', copy=False)
+    ], string='Status', copy=False, index=True,
+    help="Track the status of inventory lines:\n"
+         "• ? (Blue) - Not yet processed\n"
+         "• ⚠ (Yellow) - Unchecked\n"
+         "• ✓ (Green) - Checked")
 
     def toggle_status(self):
+        # Prefetch related records
+        self.mapped('move_line_ids.check_status')
+        
         for move in self:
             # Handle three-state toggle
             if not move.check_status:  # NULL -> unchecked
@@ -18,9 +28,10 @@ class StockMove(models.Model):
             else:  # checked -> unchecked
                 new_status = 'unchecked'
             
-            # Update move lines in a single query
+            # Update move lines in a single query with index hint
             if move.move_line_ids:
                 self.env.cr.execute("""
+                    /*+ INDEX(stock_move_line stock_move_line_move_id_index) */
                     UPDATE stock_move_line 
                     SET check_status = %s 
                     WHERE move_id = %s
@@ -28,15 +39,36 @@ class StockMove(models.Model):
             move.check_status = new_status
         return True
 
+    @api.model
+    def _search(self, args, offset=0, limit=None, order=None, count=False, access_rights_uid=None):
+        # Optimize status searches
+        if args and any(arg[0] == 'check_status' for arg in args):
+            args = [arg if arg[0] != 'check_status' or arg[1] != '=' or arg[2] 
+                   else ('check_status', 'in', [False, None])
+                   for arg in args]
+        return super()._search(args, offset=offset, limit=limit, order=order,
+                             count=count, access_rights_uid=access_rights_uid)
+
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
+
+    # Add prefetch hints
+    _prefetch_fields = ['move_id', 'check_status']
 
     check_status = fields.Selection([
         ('checked', '✓'),
         ('unchecked', '⚠')
-    ], string='Status', copy=False)
+    ], string='Status', copy=False, index=True,
+    help="Track the status of inventory lines:\n"
+         "• ? (Blue) - Not yet processed\n"
+         "• ⚠ (Yellow) - Unchecked\n"
+         "• ✓ (Green) - Checked")
 
     def toggle_status(self):
+        # Prefetch related records
+        moves = self.mapped('move_id')
+        moves.mapped('move_line_ids.check_status')
+        
         for line in self:
             # Handle three-state toggle
             if not line.check_status:  # NULL -> unchecked
@@ -48,21 +80,36 @@ class StockMoveLine(models.Model):
             
             line.check_status = new_status
             
-            # Check if all lines have same status and update move
+            # Check if all lines have same status using EXISTS
             if line.move_id:
-                all_lines = line.move_id.move_line_ids
-                if all_lines and all(l.check_status == new_status for l in all_lines):
-                    self.env.cr.execute("""
-                        UPDATE stock_move 
-                        SET check_status = %s 
-                        WHERE id = %s
-                    """, (new_status, line.move_id.id))
+                self.env.cr.execute("""
+                    /*+ INDEX(stock_move_line stock_move_line_move_id_index) */
+                    UPDATE stock_move m
+                    SET check_status = %s
+                    WHERE id = %s
+                    AND NOT EXISTS (
+                        SELECT 1 FROM stock_move_line
+                        WHERE move_id = m.id
+                        AND (check_status IS NULL OR check_status != %s)
+                    )
+                """, (new_status, line.move_id.id, new_status))
         return True
 
     @api.model
     def create(self, vals):
+        # Optimize status inheritance
         if vals.get('move_id') and 'check_status' not in vals:
             move = self.env['stock.move'].browse(vals['move_id'])
             if move.check_status:  # Only copy if parent has non-NULL status
                 vals['check_status'] = move.check_status
-        return super(StockMoveLine, self).create(vals)
+        return super().create(vals)
+
+    @api.model
+    def _search(self, args, offset=0, limit=None, order=None, count=False, access_rights_uid=None):
+        # Optimize status searches
+        if args and any(arg[0] == 'check_status' for arg in args):
+            args = [arg if arg[0] != 'check_status' or arg[1] != '=' or arg[2] 
+                   else ('check_status', 'in', [False, None])
+                   for arg in args]
+        return super()._search(args, offset=offset, limit=limit, order=order,
+                             count=count, access_rights_uid=access_rights_uid)
