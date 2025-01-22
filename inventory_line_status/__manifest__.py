@@ -1,13 +1,18 @@
 {
     'name': 'Inventory Line Status',
     'version': '12.0.1.0.0',
-    'summary': 'Add check status to inventory lines',
+    'summary': 'Add status tracking to inventory lines',
     'description': """
-        Simple status tracking for inventory operations:
-        - ✓ Checked
-        - ⚠ Unchecked
+        Track status of inventory operation lines:
+        - ❓ Not Processed (Blue)
+        - ⚠ Unchecked (Yellow)
+        - ✓ Checked (Green)
 
-        Available in both Operations and Detailed Operations tabs.
+        Features:
+        - Individual line status toggle
+        - Bulk initialization of unprocessed lines
+        - Status filters and grouping
+        - Available in both Operations and Detailed Operations tabs
     """,
     'category': 'Inventory',
     'author': 'Custom',
@@ -18,4 +23,5 @@
     ],
     'installable': True,
     'application': False,
+    'auto_install': False,
 }

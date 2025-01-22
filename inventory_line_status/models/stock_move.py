@@ -15,6 +15,20 @@ class StockMove(models.Model):
          "• ⚠ (Yellow) - Unchecked\n"
          "• ✓ (Green) - Checked")
 
+    def set_all_null_to_unchecked(self):
+        # Get all moves with NULL status
+        moves = self.filtered(lambda m: not m.check_status)
+        if moves:
+            moves.write({'check_status': 'unchecked'})
+            # Update related move lines
+            self.env.cr.execute("""
+                UPDATE stock_move_line
+                SET check_status = 'unchecked'
+                WHERE move_id IN %s
+                AND check_status IS NULL
+            """, (tuple(moves.ids),))
+        return True
+
     def toggle_status(self):
         # Prefetch related records
         self.mapped('move_line_ids.check_status')
@@ -38,16 +52,6 @@ class StockMove(models.Model):
                 """, (new_status, move.id))
             move.check_status = new_status
         return True
-
-    @api.model
-    def _search(self, args, offset=0, limit=None, order=None, count=False, access_rights_uid=None):
-        # Optimize status searches
-        if args and any(arg[0] == 'check_status' for arg in args):
-            args = [arg if arg[0] != 'check_status' or arg[1] != '=' or arg[2] 
-                   else ('check_status', 'in', [False, None])
-                   for arg in args]
-        return super()._search(args, offset=offset, limit=limit, order=order,
-                             count=count, access_rights_uid=access_rights_uid)
 
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
@@ -103,13 +107,3 @@ class StockMoveLine(models.Model):
             if move.check_status:  # Only copy if parent has non-NULL status
                 vals['check_status'] = move.check_status
         return super().create(vals)
-
-    @api.model
-    def _search(self, args, offset=0, limit=None, order=None, count=False, access_rights_uid=None):
-        # Optimize status searches
-        if args and any(arg[0] == 'check_status' for arg in args):
-            args = [arg if arg[0] != 'check_status' or arg[1] != '=' or arg[2] 
-                   else ('check_status', 'in', [False, None])
-                   for arg in args]
-        return super()._search(args, offset=offset, limit=limit, order=order,
-                             count=count, access_rights_uid=access_rights_uid)
