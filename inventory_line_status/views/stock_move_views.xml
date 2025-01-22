@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit stock picking form view -->
+    <record id="view_picking_form_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <!-- Add status to Operations tab -->
+            <xpath expr="//notebook//page//field[@name='move_ids_without_package']/tree" position="attributes">
+                <attribute name="editable">bottom</attribute>
+                <attribute name="decoration-success">check_status == 'checked'</attribute>
+                <attribute name="decoration-warning">check_status == 'unchecked'</attribute>
+            </xpath>
+            <xpath expr="//notebook//page//field[@name='move_ids_without_package']/tree//field[@name='product_uom']" position="after">
+                <button name="toggle_status" 
+                        type="object" 
+                        class="fa fa-check" 
+                        attrs="{'invisible': [('check_status', '=', 'checked')]}"
+                        style="background-color: #ffc107; padding: 2px 5px; border-radius: 3px;"/>
+                <button name="toggle_status" 
+                        type="object" 
+                        class="fa fa-check" 
+                        attrs="{'invisible': [('check_status', '=', 'unchecked')]}"
+                        style="background-color: #28a745; padding: 2px 5px; border-radius: 3px; color: white;"/>
+                <field name="check_status" invisible="1"/>
+            </xpath>
+            
+            <!-- Add status to Detailed Operations tab -->
+            <xpath expr="//notebook//page//field[@name='move_line_ids_without_package']/tree" position="attributes">
+                <attribute name="decoration-success">check_status == 'checked'</attribute>
+                <attribute name="decoration-warning">check_status == 'unchecked'</attribute>
+            </xpath>
+            <xpath expr="//notebook//page//field[@name='move_line_ids_without_package']/tree//field[@name='qty_done']" position="after">
+                <button name="toggle_status" 
+                        type="object" 
+                        class="fa fa-check" 
+                        attrs="{'invisible': [('check_status', '=', 'checked')]}"
+                        style="background-color: #ffc107; padding: 2px 5px; border-radius: 3px;"/>
+                <button name="toggle_status" 
+                        type="object" 
+                        class="fa fa-check" 
+                        attrs="{'invisible': [('check_status', '=', 'unchecked')]}"
+                        style="background-color: #28a745; padding: 2px 5px; border-radius: 3px; color: white;"/>
+                <field name="check_status" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
