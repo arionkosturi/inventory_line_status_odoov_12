@@ -6,11 +6,18 @@ class StockMove(models.Model):
     check_status = fields.Selection([
         ('checked', '✓'),
         ('unchecked', '⚠')
-    ], string='Status', default='unchecked', copy=False)
+    ], string='Status', copy=False)
 
     def toggle_status(self):
         for move in self:
-            new_status = 'checked' if move.check_status == 'unchecked' else 'unchecked'
+            # Handle three-state toggle
+            if not move.check_status:  # NULL -> unchecked
+                new_status = 'unchecked'
+            elif move.check_status == 'unchecked':  # unchecked -> checked
+                new_status = 'checked'
+            else:  # checked -> unchecked
+                new_status = 'unchecked'
+            
             # Update move lines in a single query
             if move.move_line_ids:
                 self.env.cr.execute("""
@@ -27,11 +34,18 @@ class StockMoveLine(models.Model):
     check_status = fields.Selection([
         ('checked', '✓'),
         ('unchecked', '⚠')
-    ], string='Status', default='unchecked', copy=False)
+    ], string='Status', copy=False)
 
     def toggle_status(self):
         for line in self:
-            new_status = 'checked' if line.check_status == 'unchecked' else 'unchecked'
+            # Handle three-state toggle
+            if not line.check_status:  # NULL -> unchecked
+                new_status = 'unchecked'
+            elif line.check_status == 'unchecked':  # unchecked -> checked
+                new_status = 'checked'
+            else:  # checked -> unchecked
+                new_status = 'unchecked'
+            
             line.check_status = new_status
             
             # Check if all lines have same status and update move
@@ -47,7 +61,8 @@ class StockMoveLine(models.Model):
 
     @api.model
     def create(self, vals):
-        if vals.get('move_id') and not vals.get('check_status'):
+        if vals.get('move_id') and 'check_status' not in vals:
             move = self.env['stock.move'].browse(vals['move_id'])
-            vals['check_status'] = move.check_status
+            if move.check_status:  # Only copy if parent has non-NULL status
+                vals['check_status'] = move.check_status
         return super(StockMoveLine, self).create(vals)
