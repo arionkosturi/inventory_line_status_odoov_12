@@ -1,15 +1,13 @@
 {
     'name': 'Inventory Line Status',
     'version': '12.0.1.0.0',
-    'summary': 'Easy status tracking for inventory lines',
+    'summary': 'Add check status to inventory lines',
     'description': """
-        Simple one-click status tracking for inventory operations:
+        Simple status tracking for inventory operations:
+        - ✓ Checked
+        - ⚠ Unchecked
 
-        Features:
-        - Quick toggle buttons to mark items as checked/unchecked
-        - Status syncs between Operations and Detailed Operations
-        - Color-coded rows for easy status identification
-        - Works in all operation types (Receipts, Transfers, Deliveries)
+        Available in both Operations and Detailed Operations tabs.
     """,
     'category': 'Inventory',
     'author': 'Custom',
