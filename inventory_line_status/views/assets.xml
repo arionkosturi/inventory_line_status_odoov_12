@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="assets_backend" name="inventory_line_status assets" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/inventory_line_status/static/src/js/toggle_button_widget.js"></script>
+        </xpath>
+    </template>
+</odoo>
