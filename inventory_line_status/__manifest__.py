@@ -1,23 +1,29 @@
 {
     'name': 'Inventory Line Status',
     'version': '12.0.1.0.0',
-    'category': 'Inventory',
     'summary': 'Add status tracking to inventory lines',
-    'sequence': 100,
-    'license': 'LGPL-3',
-    'author': 'Arion Kosturi',
-    'website': 'www.github.com/arionkosturi',
-    'depends': ['stock', 'web'],
+    'description': """
+        Track status of inventory operation lines with visual indicators:
+        - ? (Blue) - Not yet processed
+        - ⚠ (Yellow) - Unchecked
+        - ✓ (Green) - Checked
+
+        Features:
+        - Individual line status toggle
+        - Bulk initialization of unprocessed lines
+        - Status filters and grouping
+        - Available in both Operations and Detailed Operations tabs
+        - Tooltips for status buttons
+        - Color-coded row backgrounds
+        - Status synchronization between moves and lines
+    """,
+    'category': 'Inventory',
+    'author': 'Custom',
+    'depends': ['stock'],
     'data': [
+        'security/ir.model.access.csv',
         'views/stock_move_views.xml',
-        'views/stock_picking_views.xml',
-        'data/ir_cron.xml',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'inventory_line_status/static/src/js/status_handler.js',
-        ],
-    },
     'installable': True,
     'application': False,
     'auto_install': False,
